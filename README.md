@@ -100,6 +100,220 @@ The implementation has grown a bit and could use a little refactoring,
 specially the database dump parts.
 
 
+## Playing with the Server
+
+You'd like to play with this, but never used Redis before?
+OK, a small tutorial on what you can do with it.
+
+First make sure the server runs in one shell:
+```
+swift build -c release
+$ .build/release/redi-s
+83904:M 12 Apr 16:33:15.159 # sSZSsSZSsSZSs Redi/S is starting sSZSsSZSsSZSs
+83904:M 12 Apr 16:33:15.169 # Redi/S bits=64, pid=83904, just started
+83904:M 12 Apr 16:33:15.170 # Configuration loaded
+ ____          _ _    ______
+ |  _ \ ___  __| (_)  / / ___|    Redi/S 64 bit
+ | |_) / _ \/ _` | | / /\___ \
+ |  _ <  __/ (_| | |/ /  ___) |   Port: 1337
+ |_| \_\___|\__,_|_/_/  |____/    PID: 83904
+
+83904:M 12 Apr 16:33:15.176 # Server initialized
+83904:M 12 Apr 16:33:15.178 * Ready to accept connections
+```
+
+Notice how the server says: "Port 1337". This is the port the server is running
+on.
+
+### Via telnet/netcat
+
+You can directly connect to the server and issue Redis commands (the server
+is then running the connection in `telnet mode`, which is different to the
+regular RESP protocol):
+
+```
+$ nc localhost 1337
+KEYS *
+*0
+SET theanswer 42
++OK
+GET theanswer
+$2
+42
+```
+
+Redis is a key/value store. That is, it acts like a big Dictionary that
+can be modified from multiple processes. Above we list the available
+`KEYS`, the we set the key `theanswer` to the value 42, and retrieve it.
+(Redis provides [great documentation](https://redis.io/commands)
+ on the available commands, Redi/S implements many, but not all of them).
+
+### Via redis-cli
+
+Redis provides a tool called `redis-cli`, which is a much more convenient
+way to access the server.
+On macOS you can install that using `brew install redis` (which also gives
+you the real server),
+on Ubuntu you can grab it via `sudo apt-get install redis-tools`.
+
+The same thing we did in `telnet` above:
+
+```
+$ redis-cli -p 1337
+127.0.0.1:1337> KEYS *
+1) "theanswer"
+127.0.0.1:1337> SET theanswer 42
+OK
+127.0.0.1:1337> GET theanswer
+"42"
+```
+
+### Key Expiration
+
+Redis is particularily useful for HTTP session stores, and for caches.
+When setting a key, you can set an "expiration" (in seconds, milliseconds,
+or Unix timestamps):
+
+```
+127.0.0.1:1337> EXPIRE theanswer 10
+(integer) 1
+127.0.0.1:1337> TTL theanswer
+(integer) 6
+127.0.0.1:1337> GET theanswer
+"42"
+127.0.0.1:1337> TTL theanswer
+(integer) -2
+127.0.0.1:1337> GET theanswer
+(nil)
+```
+
+We are using "strings" here. In Redis "strings" are actually "Data" objects,
+i.e. binary arrays of bytes (this is even true for bytes!).
+For example in a web application, you could use the "session-id" you generate,
+serialize your session into a Data object, and then store it like
+`SET session-id <session> TTL 600`.
+  
+### Key Generation
+
+But how do we generate keys (e.g. session-ids) in a distributed setting?
+As usual there are many ways to do this.
+For example you could use a Redis integer key which provides atomic increment
+and decrement operations:
+
+```
+127.0.0.1:1337> SET idsequence 0
+OK
+127.0.0.1:1337> INCR idsequence
+(integer) 1
+127.0.0.1:1337> INCR idsequence
+(integer) 2
+```
+
+Or if you generate keys on the client side, you can validate that they are
+unique using [SETNX](https://redis.io/commands/setnx). For example:
+
+```
+127.0.0.1:1337> SETNX mykey 10
+(integer) 1
+```
+
+And another client will get
+
+```
+127.0.0.1:1337> SETNX mykey 10
+(integer) 0
+```
+
+### Simple Lists
+
+Redis cannot only store string (read: Data) values, it can also store
+lists, sets and hashes (dictionaries).
+As well as some other datatypes:
+[Data Types Intro](https://redis.io/topics/data-types-intro).
+
+```
+127.0.0.1:1337> RPUSH chatchannel "Hi guys!"
+(integer) 1
+127.0.0.1:1337> RPUSH chatchannel "How is it going?"
+(integer) 2
+127.0.0.1:1337> LLEN chatchannel
+(integer) 2
+127.0.0.1:1337> LRANGE chatchannel 0 -1
+1) "Hi guys!"
+2) "How is it going?"
+127.0.0.1:1337> RPOP chatchannel
+"How is it going?"
+127.0.0.1:1337> RPOP chatchannel
+"Hi guys!"
+127.0.0.1:1337> RPOP chatchannel
+(nil)
+```
+
+### Monitoring
+
+Assume you want to debug what's going on on your Redis server.
+You can do this by connecting w/ a fresh client and put that into
+"monitoring" mode. The Redis server will echo all commands it receives
+to that monitor:
+
+```
+$ redis-cli -p 1337
+127.0.0.1:1337> MONITOR
+OK
+```
+
+Some other client:
+
+```
+127.0.0.1:1337> hmset user:1000 username antirez birthyear 1976 verified 1
+OK
+127.0.0.1:1337> hmget user:1000 username verified
+1) "antirez"
+2) "1"
+```
+
+The monitor will print:
+
+```
+1523545069.071390 [0 127.0.0.1:60904] "hmset" "user:1000" "username" "antirez" "birthyear" "1976" "verified" "1"
+1523545087.016070 [0 127.0.0.1:60904] "hmget" "user:1000" "username" "verified"
+```
+
+### Publish/Subscribe
+
+Redis includes a simple publish/subscribe server.
+Any numbers of clients can subscribe to any numbers of channels.
+Other clients can then push "messages" to a channel, and all
+subscribed clients will receive them.
+
+One client:
+```
+127.0.0.1:1337> PSUBSCRIBE thermostats*
+Reading messages... (press Ctrl-C to quit)
+1) psubscribe
+2) "thermostats*"
+3) (integer) 1
+```
+
+Another client (the reply contains the number of consumers):
+
+```
+127.0.0.1:1337> PUBLISH thermostats:kitchen "temperature set to 42℃"
+(integer) 1
+```
+
+The subscribed client will get:
+```
+1) message
+2) "thermostats:kitchen"
+3) "temperatur set to 4242℃"
+```
+
+> Note: PubSub is separate to the key-value store. You cannot watch keys using
+> that! (there are blocking list operations for producer/consumer scenarios,
+> but those are not yet supported by Redi/S)
+
+
 ### Who
 
 Brought to you by
