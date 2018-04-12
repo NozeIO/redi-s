@@ -69,4 +69,5 @@ fastlane/test_output
 *.xcodeproj
 .build-linux
 Package.resolved
+dump*.json
 
