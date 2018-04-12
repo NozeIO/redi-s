@@ -1,0 +1,34 @@
+language:  generic
+
+notifications:
+    slack: nozeio:LIFY1Jtkx0FRcLq3u1WliHRZ
+
+matrix:
+    include:
+        - os:   Linux
+          dist: trusty
+          env:  SWIFT_SNAPSHOT_NAME="https://swift.org/builds/swift-4.0.3-release/ubuntu1404/swift-4.0.3-RELEASE/swift-4.0.3-RELEASE-ubuntu14.04.tar.gz"
+          sudo: required
+        - os:   Linux
+          dist: trusty
+          env:  SWIFT_SNAPSHOT_NAME="https://swift.org/builds/swift-4.1-release/ubuntu1404/swift-4.1-RELEASE/swift-4.1-RELEASE-ubuntu14.04.tar.gz"
+          sudo: required
+        - os:   osx
+          osx_image: xcode9
+        - os:   osx
+          osx_image: xcode9.3
+
+
+before_install:
+    - ./.travis.d/before-install.sh
+
+install:
+    - ./.travis.d/install.sh
+
+script:
+    - export PATH="$HOME/usr/bin:$PATH"
+    - export SWIFTENV_ROOT="$HOME/.swiftenv"
+    - export PATH="${SWIFTENV_ROOT}/bin:${SWIFTENV_ROOT}/shims:$PATH"
+    - swift build -c release
+    - swift build -c debug
+
