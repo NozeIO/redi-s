@@ -35,7 +35,7 @@ Use cases:
 Redi/S supports a lot, including PubSub and monitoring.<br />
 Redi/S supports a lot *not*, including transactions or HyperLogLogs.
 
-There is a [list of supported commands](Commands.md).
+There is a [list of supported commands](Sources/RedisServer/Commands.md).
 
 Contributions welcome!! A lot of the missing stuff is really easy to add!
 
