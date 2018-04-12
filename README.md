@@ -1,7 +1,12 @@
 <h2>Redi/S
-  <img src="redi-s-logo-286x100.png"
+  <img src="http://zeezide.com/img/redi-s-logo-286x100.png"
        align="right" width="286" height="100" />
 </h2>
+
+![Swift4](https://img.shields.io/badge/swift-4-blue.svg)
+![macOS](https://img.shields.io/badge/os-macOS-green.svg?style=flat)
+![tuxOS](https://img.shields.io/badge/os-tuxOS-green.svg?style=flat)
+![Travis](https://travis-ci.org/NozeIO/redi-s.svg?branch=develop)
 
 Redi/S is a **Redis server implementation** in the
 [Swift](https://swift.org)
