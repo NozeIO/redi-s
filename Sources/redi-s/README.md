@@ -1,5 +1,5 @@
 <h2>Redi/S - Server Executable
-  <img src="redi-s-logo-286x100.png"
+  <img src="http://zeezide.com/img/redi-s-logo-286x100.png"
        align="right" width="286" height="100" />
 </h2>
 

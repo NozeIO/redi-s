@@ -47,7 +47,7 @@ okayish, LPUSH is very slow).
 But looking at just the simple GET/SET, it is surprisingly close to the
 highly optimized C implementation:
 
-Redi/S (2 NIO threads on 3,7 GHz Quad-Core Intel Xeon E5):
+Redi/S (2 NIO threads on MacPro 3,7 GHz Quad-Core Intel Xeon E5):
 ```
 helge@ZeaPro ~ $ redis-benchmark -p 1337 -t SET,GET,RPUSH,INCR -n 500000 -q
 SET: 46412.33 requests per second
@@ -56,7 +56,7 @@ INCR: 37094.74 requests per second
 RPUSH: 41872.54 requests per second
 ```
 
-Redis 4.0.8  (same 4-Core MacPro):
+Redis 4.0.8  (same MacPro 3,7 GHz Quad-Core Intel Xeon E5):
 ```
 helge@ZeaPro ~ $ redis-benchmark -t SET,GET,RPUSH,INCR -n 500000 -q
 SET: 54884.74 requests per second
@@ -69,7 +69,7 @@ There are [Performance notes](Sources/RedisServer/Performance.md),
 looking at the specific NIO implementation of Redi/S.
 
 Persistence is really inefficient,
-the databases are just dump as JSON via Codable.
+the databases are just dumped as JSON via Codable.
 Easy to fix.
 
 
