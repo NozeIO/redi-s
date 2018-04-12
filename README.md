@@ -107,7 +107,7 @@ OK, a small tutorial on what you can do with it.
 
 First make sure the server runs in one shell:
 ```
-swift build -c release
+$ swift build -c release
 $ .build/release/redi-s
 83904:M 12 Apr 16:33:15.159 # sSZSsSZSsSZSs Redi/S is starting sSZSsSZSsSZSs
 83904:M 12 Apr 16:33:15.169 # Redi/S bits=64, pid=83904, just started
@@ -144,7 +144,7 @@ $2
 
 Redis is a key/value store. That is, it acts like a big Dictionary that
 can be modified from multiple processes. Above we list the available
-`KEYS`, the we set the key `theanswer` to the value 42, and retrieve it.
+`KEYS`, then we set the key `theanswer` to the value 42, and retrieve it.
 (Redis provides [great documentation](https://redis.io/commands)
  on the available commands, Redi/S implements many, but not all of them).
 
@@ -314,7 +314,24 @@ The subscribed client will get:
 > but those are not yet supported by Redi/S)
 
 
-### Who
+### Benchmarking
+
+Redis tools also include a tool called `redis-benchmark` which can be,
+similar to `apache-bench` or `wrk` be used to measure the server performance.
+
+For example, to exercise the server with half a million SET, GET, RPUSH and INCR
+requests each:
+
+```
+$ redis-benchmark -p 1337 -t SET,GET,RPUSH,INCR -n 500000 -q
+SET: 43192.81 requests per second
+GET: 46253.47 requests per second
+INCR: 38952.95 requests per second
+RPUSH: 39305.09 requests per second
+```
+
+
+## Who
 
 Brought to you by
 [ZeeZide](http://zeezide.de).
