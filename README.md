@@ -50,10 +50,10 @@ highly optimized C implementation:
 Redi/S (2 NIO threads on MacPro 3,7 GHz Quad-Core Intel Xeon E5):
 ```
 helge@ZeaPro ~ $ redis-benchmark -p 1337 -t SET,GET,RPUSH,INCR -n 500000 -q
-SET: 46412.33 requests per second
-GET: 47393.36 requests per second
-INCR: 37094.74 requests per second
-RPUSH: 41872.54 requests per second
+SET: 48003.07 requests per second
+GET: 48459.00 requests per second
+INCR: 43890.45 requests per second
+RPUSH: 46087.20 requests per second
 ```
 
 Redis 4.0.8  (same MacPro 3,7 GHz Quad-Core Intel Xeon E5):

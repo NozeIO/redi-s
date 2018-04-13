@@ -29,9 +29,7 @@ import struct Foundation.TimeInterval
  *     [ "SET", "answer", 42 ]
  *
  */
-final class RedisCommandHandler : ChannelInboundHandler {
-  
-  typealias InboundIn  = RESPValue
+final class RedisCommandHandler : RedisChannelHandler {
   
   public typealias Context = RedisCommandContext
   public typealias Command = RedisCommand
@@ -58,20 +56,21 @@ final class RedisCommandHandler : ChannelInboundHandler {
     self.id         = id
     self.server     = server
     self.commandMap = server.commandMap
+    super.init()
   }
   
   
   // MARK: - Channel Activation
   
-  func channelActive(ctx: ChannelHandlerContext) {
+  override open func channelActive(ctx: ChannelHandlerContext) {
     eventLoop     = ctx.eventLoop
     remoteAddress = ctx.remoteAddress
     channel       = ctx.channel
     
-    ctx.fireChannelActive()
+    super.channelActive(ctx: ctx)
   }
   
-  func channelInactive(ctx: ChannelHandlerContext) {
+  override open func channelInactive(ctx: ChannelHandlerContext) {
     if let channels = subscribedChannels, !channels.isEmpty {
       subscribedChannels = nil
       
@@ -91,8 +90,8 @@ final class RedisCommandHandler : ChannelInboundHandler {
       }
     }
     
-    ctx.fireChannelInactive()
-    
+    super.channelInactive(ctx: ctx)
+
     server.Q.async {
       self.server._unregisterClient(self)
     }
@@ -114,15 +113,14 @@ final class RedisCommandHandler : ChannelInboundHandler {
   
   // MARK: - Reading
 
-  func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+  override open func channelRead(ctx: ChannelHandlerContext, value: RESPValue) {
     lastActivity = Date()
     do {
-      let callData = unwrapInboundIn(data)
-      let ( command, args ) = try parseCommandCall(callData)
+      let ( command, args ) = try parseCommandCall(value)
       
       if server.monitors.load() > 0 {
         let info = MonitorInfo(db: databaseIndex, addr: remoteAddress,
-                               call: callData)
+                               call: value)
         server.notifyMonitors(info: info)
       }
       
@@ -140,18 +138,19 @@ final class RedisCommandHandler : ChannelInboundHandler {
       try callCommand(command, with: args, in: cmdctx)
     }
     catch let error as RESPError {
-      return ctx.writeAndFlush(NIOAny(error), promise: nil)
+      self.write(ctx: ctx, value: error.toRESPValue(), promise: nil)
     }
     catch let error as RESPEncodable {
-      return ctx.writeAndFlush(NIOAny(error.toRESPValue()), promise: nil)
+      self.write(ctx: ctx, value: error.toRESPValue(), promise: nil)
     }
     catch {
       let respError = RESPError(message: "\(error)")
-      return ctx.writeAndFlush(NIOAny(respError), promise: nil)
+      self.write(ctx: ctx, value: respError.toRESPValue(), promise: nil)
     }
   }
   
-  public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+  override open func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    super.errorCaught(ctx: ctx, error: error)
     server.logger.error("Channel", error)
     ctx.close(promise: nil)
   }

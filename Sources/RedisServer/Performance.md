@@ -95,10 +95,53 @@ Command lookup seems to play no significant role,
 but one thing we might try is to wrap the ByteBuffer in a small struct
 w/ an efficient and targetted, case-insensitive hash.
 
+### Avoid NIO Pipeline for non-BB
 
-## Worker Sync Variants
+The "idea" in NIO is that you form a pipeline of handlers.
+At the base of that pipeline is the socket, which pushes and receives
+`ByteBuffer`s from that pipeline.
+The handlers can then perform a set of transformations.
+And one thing they can do, is parse the `ByteBuffer`s into higher level 
+objects.
 
-### GCD DispatchQueue for synchronization
+This is what we did originally (0.5.0) release:
+
+```
+Socket 
+  =(BB)=>
+    NIORedis.RESPChannelHandler 
+      =(RESPValue)=>
+        RedisServer.RedisCommandHandler
+      <=(RESPValue)
+    NIORedis.RESPChannelHandler 
+  <=(BB)=
+Socket
+```
+
+When values travel the NIO pipeline, they are boxed in `NIOAny` objects.
+Crazy enough just this boxing has a very high overhead for non-ByteBuffer
+objects, i.e. putting `RESPValue`s in and out of `NIOAny` while passing
+them from the parser to the command handler, takes about *9%* of the runtime
+(at least in a sample below ...).
+
+To workaround that, `RedisCommandHandler` is now a *subclass*
+of `RESPChannelHandler`.
+This way we never wrap non-ByteBuffer objects in `NIOAny` and the pipeline
+looks like this:
+Socket 
+  =(BB)=>
+    RedisServer.RedisCommandHandler : NIORedis.RESPChannelHandler 
+  <=(BB)=
+Socket
+```
+
+We do not have a completely idle system for more exact performance testing,
+but this seems to lead to a 3-10% speedup (measurements vary quite a bit).
+
+
+### Worker Sync Variants
+
+#### GCD DispatchQueue for synchronization
 
 Originally the project used a `DispatchQueue` to synchronize access to the
 in-memory databases.
@@ -109,7 +152,7 @@ Well, this is all very fast in-memory database access which in *this specific ca
 is actually faster than the capturing a dispatch block and submitting that to a queue
 (which also involves a lock ...)
 
-### NIO.EventLoop instead of GCD
+#### NIO.EventLoop instead of GCD
 
 We wondered whether a `NIO.EventLoop` might be faster then a `DispatchQueue`
 as the single threaded synchronization point for the worker thread
@@ -117,7 +160,7 @@ as the single threaded synchronization point for the worker thread
 
 There is no measurable difference. GCD is a tinsy bit faster.
 
-### Single Threaded
+#### Single Threaded
 
 Also tested a version with no threading at all (Node.js/Noze.io style).
 That is, not just lowering the thread-count to 1, but taking out all `.async`

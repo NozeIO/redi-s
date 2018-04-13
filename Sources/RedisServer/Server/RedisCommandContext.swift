@@ -113,25 +113,34 @@ public struct RedisCommandContext {
   
   @_specialize(where T == Int)
   @_specialize(where T == String)
-  func write<T: RESPEncodable>(_ value: T) {
+  func write<T: RESPEncodable>(_ value: T, flush: Bool = true) {
+    let context = self.context
+    let handler = self.handler
+    
     if eventLoop.inEventLoop {
-      context.writeAndFlush(NIOAny(value.toRESPValue()), promise: nil)
+      handler.write(ctx: context, value: value.toRESPValue(), promise: nil)
+      if flush { context.channel.flush() }
     }
     else {
       eventLoop.execute {
-        self.context.writeAndFlush(NIOAny(value.toRESPValue()),
-                                   promise: nil)
+        handler.write(ctx: context, value: value.toRESPValue(), promise: nil)
+        if flush { context.channel.flush() }
       }
     }
   }
   
-  func write(_ value: RESPValue) {
+  func write(_ value: RESPValue, flush: Bool = true) {
+    let context = self.context
+    let handler = self.handler
+    
     if eventLoop.inEventLoop {
-      context.writeAndFlush(NIOAny(value), promise: nil)
+      handler.write(ctx: context, value: value, promise: nil)
+      if flush { context.channel.flush() }
     }
     else {
       eventLoop.execute {
-        self.context.writeAndFlush(NIOAny(value), promise: nil)
+        handler.write(ctx: context, value: value, promise: nil)
+        if flush { context.channel.flush() }
       }
     }
   }

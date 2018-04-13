@@ -240,9 +240,6 @@ open class RedisServer {
           .add(name: "com.apple.nio.backpressure",
                handler: BackPressureHandler()) // Oh well :-)
           .then {
-            channel.pipeline.configureRedisPipeline()
-          }
-          .then {
             let cid     = clientID.add(1)
             let handler = RedisCommandHandler(id: cid, server: self)
             
