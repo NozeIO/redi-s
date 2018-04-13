@@ -140,6 +140,15 @@ Socket
 We do not have a completely idle system for more exact performance testing,
 but this seems to lead to a 3-10% speedup (measurements vary quite a bit).
 
+Follow-up:
+- get `MemoryLayout<RESPValue>.size` down to max 24, and we can avoid a malloc
+  - but `ByteBuffer` (and `Data`) are already 24
+- made `RESPError` class backed in swift-nio-redis. Reduces size of 
+  `RESPValue` from 49 to 25 bytes (still 1 byte too much)
+  - @weissi suggest backing `RESPValue` w/ a class storage as well,
+    we might try that. Though it takes away yet another Swift feature (enums)
+    for the sake of performance.
+
 
 ### Worker Sync Variants
 
