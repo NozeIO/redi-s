@@ -128,6 +128,8 @@ To workaround that, `RedisCommandHandler` is now a *subclass*
 of `RESPChannelHandler`.
 This way we never wrap non-ByteBuffer objects in `NIOAny` and the pipeline
 looks like this:
+
+```
 Socket 
   =(BB)=>
     RedisServer.RedisCommandHandler : NIORedis.RESPChannelHandler 
