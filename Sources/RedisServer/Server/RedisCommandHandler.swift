@@ -29,7 +29,10 @@ import struct Foundation.TimeInterval
  *     [ "SET", "answer", 42 ]
  *
  */
-final class RedisCommandHandler : RedisChannelHandler {
+final class RedisCommandHandler : RESPChannelHandler {
+  // See [Avoid NIO Pipeline](Performance.md#avoid-nio-pipeline-for-non-bb)
+  // for the reason why this is a subclass (instead of a consumer of the
+  // RESPChannelHandler producer.
   
   public typealias Context = RedisCommandContext
   public typealias Command = RedisCommand

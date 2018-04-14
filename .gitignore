@@ -67,7 +67,7 @@ fastlane/screenshots
 fastlane/test_output
 
 *.xcodeproj
-.build-linux
+.build-linux*
 Package.resolved
 dump*.json
 
