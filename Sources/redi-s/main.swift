@@ -37,7 +37,7 @@ let cmdLinePort : Int? = {
   guard let idx = args.index(where: { [ "-p", "--port" ].contains($0) }) else {
     return nil
   }
-  guard idx < args.count, let port = UInt16(args[idx + 1]) else {
+  guard (idx + 1) < args.endIndex, let port = UInt16(args[idx + 1]) else {
     print("Missing or invalid value for", args[idx], "argument")
     exit(42)
   }
