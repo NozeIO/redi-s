@@ -9,8 +9,6 @@ let package = Package(
         .executable(name: "redi-s",      targets: [ "redi-s" ]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", 
-                 from: "1.5.0"),
         .package(url: "https://github.com/NozeIO/swift-nio-redis.git", 
                  from: "0.8.3")
     ],
