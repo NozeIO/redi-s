@@ -10,7 +10,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/NozeIO/swift-nio-redis.git", 
-                 from: "0.8.3")
+                 .branch("nio/master"))
     ],
     targets: [
         .target(name: "RedisServer", dependencies: [ "NIORedis"    ]),
