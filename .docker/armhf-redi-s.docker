@@ -1,0 +1,75 @@
+# Dockerfile
+#
+#   docker run --rm -d --name redi-s helje5/rpi-nio-redi-s:latest
+#
+# Attach w/ new shell
+#
+#   docker exec -it redi-s bash
+#
+# To build:
+#
+#   time docker build -t helje5/rpi-nio-redi-s:latest -f .docker/armhf-redi-s.docker .
+#   docker push helje5/rpi-nio-redi-s:latest
+#
+
+# Build Image
+
+FROM helje5/rpi-swift-dev:4.1.0 AS builder
+
+LABEL maintainer "Helge Heß <me@helgehess.eu>"
+
+ENV DEBIAN_FRONTEND noninteractive
+
+# Release crashes compiler
+# - https://github.com/NozeIO/swift-nio-irc/issues/2
+ENV CONFIGURATION   debug
+
+USER root
+
+WORKDIR /src/
+COPY Sources        Sources
+COPY Package.swift  .
+
+RUN mkdir -p /opt/redi-s/bin
+RUN swift build -c ${CONFIGURATION}
+RUN cp $(swift build -c ${CONFIGURATION} --show-bin-path)/redi-s \
+    /opt/redi-s/bin/
+
+
+# Deployment Image
+
+FROM ioft/armhf-ubuntu:16.04
+
+LABEL maintainer  "Helge Heß <me@helgehess.eu>"
+LABEL description "A ARMhf Redi/S deployment container"
+
+RUN apt-get -q update && apt-get -q -y install \
+    libatomic1 libbsd0 libcurl3 libicu55 libxml2 \
+    daemontools \
+    && rm -r /var/lib/apt/lists/*
+
+WORKDIR /
+
+COPY --from=builder /usr/lib/swift/linux/*.so /usr/lib/swift/linux/
+COPY --from=builder /opt/redi-s/bin           /opt/redi-s/bin
+
+EXPOSE 1337
+
+RUN useradd --create-home --shell /bin/bash redi-s
+
+RUN mkdir -p     /opt/redi-s/logs /opt/redi-s/supervise
+RUN chown redi-s /opt/redi-s/logs /opt/redi-s/supervise
+
+RUN bash -c "echo '#!/bin/bash'                                        > run; \
+             echo ''                                                  >> run; \
+             echo echo RUN Started  \$\(date\) \>\>logs/run.log       >> run; \
+             echo ''                                                  >> run; \
+             echo ./bin/redi-s \>\>logs/run.log 2\>\>logs/error.log   >> run; \
+             echo ''                                                  >> run; \
+             echo echo RUN Finished \$\(date\) \>\>logs/run.log       >> run; \
+             echo echo RUN ------------------- \>\>logs/run.log       >> run; \
+             chmod +x run"
+
+USER redi-s
+
+CMD ["supervise", "/opt/redi-s"]
