@@ -39,12 +39,12 @@ open class RedisServer {
       }
     }
     
-    open var host           : String = "127.0.0.1"
-    open var port           : Int    = DefaultRedisPort
+    open var host           : String? = nil // "127.0.0.1"
+    open var port           : Int     = DefaultRedisPort
     
-    open var alwaysShowLog  : Bool   = true
+    open var alwaysShowLog  : Bool    = true
     
-    open var dbFilename     : String = "dump.json"
+    open var dbFilename     : String  = "dump.json"
     open var savePoints     : [ SavePoint ]? = nil
     
     open var eventLoopGroup : EventLoopGroup? = nil
@@ -131,8 +131,19 @@ open class RedisServer {
       
       loadDumpIfAvailable()
       
-      serverChannel = try bootstrap.bind(host: configuration.host,
-                                         port: configuration.port)
+      let address : SocketAddress
+      
+      if let host = configuration.host {
+        address = try SocketAddress
+          .newAddressResolving(host: host, port: configuration.port)
+      }
+      else {
+        var addr = sockaddr_in()
+        addr.sin_port = in_port_t(configuration.port).bigEndian
+        address = SocketAddress(addr, host: "*")
+      }
+
+      serverChannel = try bootstrap.bind(to: address)
                                    .wait()
       
       if let addr = serverChannel?.localAddress {
