@@ -1,0 +1,6 @@
+.git
+.build*
+*.xcodeproj
+Package.resolved
+*.json
+
