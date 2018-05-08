@@ -65,6 +65,15 @@ INCR: 54692.62 requests per second
 RPUSH: 54013.18 requests per second
 ```
 
+Redi/S on RaspberryPi 3B+
+```
+$ redis-benchmark -h zpi3b.local -p 1337 -t SET,GET,RPUSH,INCR -n 50000 -q
+SET: 4119.29 requests per second
+GET: 5056.12 requests per second
+INCR: 3882.59 requests per second
+RPUSH: 3872.07 requests per second
+```
+
 There are [Performance notes](Sources/RedisServer/Performance.md),
 looking at the specific NIO implementation of Redi/S.
 
