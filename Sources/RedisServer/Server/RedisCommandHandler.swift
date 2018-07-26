@@ -65,7 +65,7 @@ final class RedisCommandHandler : RESPChannelHandler {
   
   // MARK: - Channel Activation
   
-  override open func channelActive(ctx: ChannelHandlerContext) {
+  override public func channelActive(ctx: ChannelHandlerContext) {
     eventLoop     = ctx.eventLoop
     remoteAddress = ctx.remoteAddress
     channel       = ctx.channel
@@ -73,7 +73,7 @@ final class RedisCommandHandler : RESPChannelHandler {
     super.channelActive(ctx: ctx)
   }
   
-  override open func channelInactive(ctx: ChannelHandlerContext) {
+  override public func channelInactive(ctx: ChannelHandlerContext) {
     if let channels = subscribedChannels, !channels.isEmpty {
       subscribedChannels = nil
       
@@ -116,7 +116,8 @@ final class RedisCommandHandler : RESPChannelHandler {
   
   // MARK: - Reading
 
-  override open func channelRead(ctx: ChannelHandlerContext, value: RESPValue) {
+  override public func channelRead(ctx: ChannelHandlerContext, value: RESPValue)
+  {
     lastActivity = Date()
     do {
       let ( command, args ) = try parseCommandCall(value)
@@ -152,7 +153,7 @@ final class RedisCommandHandler : RESPChannelHandler {
     }
   }
   
-  override open func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+  override public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
     super.errorCaught(ctx: ctx, error: error)
     server.logger.error("Channel", error)
     ctx.close(promise: nil)

@@ -75,7 +75,7 @@ open class RedisServer {
     self.configuration = configuration
     
     self.group        = configuration.eventLoopGroup
-                     ?? MultiThreadedEventLoopGroup(numThreads: 2)
+                     ?? MultiThreadedEventLoopGroup(numberOfThreads: 2)
     self.commandTable = configuration.commands
     self.logger       = configuration.logger
     self.dumpURL      = URL(fileURLWithPath: configuration.dbFilename)
