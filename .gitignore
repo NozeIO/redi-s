@@ -70,4 +70,5 @@ fastlane/test_output
 .build-linux*
 Package.resolved
 dump*.json
+.swiftpm
 

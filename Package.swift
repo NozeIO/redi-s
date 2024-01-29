@@ -1,4 +1,4 @@
-// swift-tools-version:4.0
+// swift-tools-version:5.0
 
 import PackageDescription
 
@@ -10,7 +10,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SwiftNIOExtras/swift-nio-redis.git", 
-                 from: "0.9.0")
+                 from: "0.10.3")
     ],
     targets: [
         .target(name: "RedisServer", dependencies: [ "NIORedis"    ]),
