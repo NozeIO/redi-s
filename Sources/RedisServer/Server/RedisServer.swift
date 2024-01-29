@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -135,7 +135,7 @@ open class RedisServer {
       
       if let host = configuration.host {
         address = try SocketAddress
-          .newAddressResolving(host: host, port: configuration.port)
+          .makeAddressResolvingHost(host, port: configuration.port)
       }
       else {
         var addr = sockaddr_in()
@@ -217,9 +217,7 @@ open class RedisServer {
     
     let logPacket : RESPValue = {
       let logStr = info.redisClientLogLine
-      
-      var bb = ByteBufferAllocator().buffer(capacity: logStr.utf8.count + 1)
-      bb.write(string: logStr)
+      let bb     = ByteBuffer(string: logStr)
       return RESPValue.simpleString(bb)
     }()
     
@@ -248,9 +246,9 @@ open class RedisServer {
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
         channel.pipeline
-          .add(name: "com.apple.nio.backpressure",
-               handler: BackPressureHandler()) // Oh well :-)
-          .then {
+          .addHandler(BackPressureHandler() /* Oh well :-) */,
+                      name: "com.apple.nio.backpressure")
+          .flatMap {
             let cid     = clientID.add(1)
             let handler = RedisCommandHandler(id: cid, server: self)
             
@@ -258,9 +256,8 @@ open class RedisServer {
               self._registerClient(handler)
             }
             
-            return channel.pipeline.add(name:
-                                          "de.zeezide.nio.redis.server.client",
-                                        handler: handler)
+            return channel.pipeline
+              .addHandler(handler, name:"de.zeezide.nio.redis.server.client")
           }
       }
       

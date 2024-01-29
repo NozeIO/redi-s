@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -25,10 +25,10 @@ extension Commands {
   {
     guard var bb = value.byteBuffer else { throw RedisError.wrongType }
     
-    let result : Int = try ctx.writeInDatabase { db in
-      if let oldValue = db[key] {
+    let result : Int = try ctx.writeInDatabase { ( db : Databases.Database ) in
+      if let oldValue : RedisValue = db[key] {
         guard case .string(var s) = oldValue else { throw RedisError.wrongType }
-        s.write(buffer: &bb)
+        s.writeBuffer(&bb)
         db[key] = .string(s)
         return s.readableBytes
       }
@@ -253,11 +253,11 @@ extension Commands {
       
       if index > s.readableBytes { // if index > count, 0-padded!!!
         let countToWrite = index - s.readableBytes
-        s.write(bytes: repeatElement(UInt8(0), count: countToWrite))
+        s.writeRepeatingByte(0, count: countToWrite)
       }
       
       s.moveWriterIndex(to: s.readerIndex + index)
-      s.write(buffer: &bb)
+      s.writeBuffer(&bb)
       
       db[key] = .string(s)
       return s.readableBytes

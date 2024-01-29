@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -17,50 +17,33 @@ import struct NIO.ByteBuffer
 import struct NIO.ByteBufferAllocator
 import NIOFoundationCompat
 
-extension ByteBuffer : Encodable {
-  
-  public func encode(to encoder: Encoder) throws {
-    let data = getData(at: readerIndex, length: readableBytes)!
-    var container = encoder.singleValueContainer()
-    try container.encode(data)
-  }
-}
-
 extension KeyedDecodingContainer {
   
   func decodeByteBuffer(forKey key: Key) throws -> ByteBuffer {
     let data = try decode(Data.self, forKey: key)
-    var bb = ByteBufferAllocator().buffer(capacity: data.count + 1)
-    bb.write(bytes: data)
-    return bb
+    return ByteBuffer(data: data)
   }
   
   func decodeByteBufferArray(forKey key: Key) throws
          -> ContiguousArray<ByteBuffer>
   {
     let datas   = try decode(Array<Data>.self, forKey: key)
-    let alloc   = ByteBufferAllocator()
     var buffers = ContiguousArray<ByteBuffer>()
     buffers.reserveCapacity(datas.count + 1)
     
     for data in datas {
-      var bb = alloc.buffer(capacity: data.count + 1)
-      bb.write(bytes: data)
-      buffers.append(bb)
+      buffers.append(ByteBuffer(data: data))
     }
     return buffers
   }
 
   func decodeByteBufferHash(forKey key: Key) throws -> [ Data : ByteBuffer ] {
     let datas   = try decode(Dictionary<Data, Data>.self, forKey: key)
-    let alloc   = ByteBufferAllocator()
     var buffers = [ Data : ByteBuffer ]()
     buffers.reserveCapacity(datas.count + 1)
     
     for ( key, data ) in datas {
-      var bb = alloc.buffer(capacity: data.count + 1)
-      bb.write(bytes: data)
-      buffers[key] = bb
+      buffers[key] = ByteBuffer(data: data)
     }
     return buffers
   }

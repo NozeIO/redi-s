@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -65,15 +65,15 @@ final class RedisCommandHandler : RESPChannelHandler {
   
   // MARK: - Channel Activation
   
-  override public func channelActive(ctx: ChannelHandlerContext) {
-    eventLoop     = ctx.eventLoop
-    remoteAddress = ctx.remoteAddress
-    channel       = ctx.channel
+  override public func channelActive(context: ChannelHandlerContext) {
+    eventLoop     = context.eventLoop
+    remoteAddress = context.remoteAddress
+    channel       = context.channel
     
-    super.channelActive(ctx: ctx)
+    super.channelActive(context: context)
   }
   
-  override public func channelInactive(ctx: ChannelHandlerContext) {
+  override public func channelInactive(context: ChannelHandlerContext) {
     if let channels = subscribedChannels, !channels.isEmpty {
       subscribedChannels = nil
       
@@ -93,7 +93,7 @@ final class RedisCommandHandler : RESPChannelHandler {
       }
     }
     
-    super.channelInactive(ctx: ctx)
+    super.channelInactive(context: context)
 
     server.Q.async {
       self.server._unregisterClient(self)
@@ -116,7 +116,8 @@ final class RedisCommandHandler : RESPChannelHandler {
   
   // MARK: - Reading
 
-  override public func channelRead(ctx: ChannelHandlerContext, value: RESPValue)
+  override public func channelRead(context: ChannelHandlerContext,
+                                   value: RESPValue)
   {
     lastActivity = Date()
     do {
@@ -137,26 +138,26 @@ final class RedisCommandHandler : RESPChannelHandler {
       
       let cmdctx = RedisCommandContext(command   : command,
                                        handler   : self,
-                                       context   : ctx,
+                                       context   : context,
                                        databases : dbs)
       try callCommand(command, with: args, in: cmdctx)
     }
     catch let error as RESPError {
-      self.write(ctx: ctx, value: error.toRESPValue(), promise: nil)
+      self.write(context: context, value: error.toRESPValue(), promise: nil)
     }
     catch let error as RESPEncodable {
-      self.write(ctx: ctx, value: error.toRESPValue(), promise: nil)
+      self.write(context: context, value: error.toRESPValue(), promise: nil)
     }
     catch {
       let respError = RESPError(message: "\(error)")
-      self.write(ctx: ctx, value: respError.toRESPValue(), promise: nil)
+      self.write(context: context, value: respError.toRESPValue(), promise: nil)
     }
   }
   
-  override public func errorCaught(ctx: ChannelHandlerContext, error: Error) {
-    super.errorCaught(ctx: ctx, error: error)
+  override public func errorCaught(context: ChannelHandlerContext, error: Error) {
+    super.errorCaught(context: context, error: error)
     server.logger.error("Channel", error)
-    ctx.close(promise: nil)
+    context.close(promise: nil)
   }
   
   
