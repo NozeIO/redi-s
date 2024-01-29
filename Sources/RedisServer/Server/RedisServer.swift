@@ -17,7 +17,7 @@ import struct Foundation.URL
 import struct Foundation.TimeInterval
 import class  Foundation.FileManager
 import class  Foundation.JSONDecoder
-import class  NIOConcurrencyHelpers.Atomic
+import class  Atomics.ManagedAtomic
 import enum   NIORedis.RESPValue
 import NIO
 
@@ -66,9 +66,9 @@ open class RedisServer {
   var databases   : Databases?
   
   let Q           = DispatchQueue(label: "de.zeezide.nio.redisd.clients")
-  let clientID    = Atomic<Int>(value: 0)
+  let clientID    = ManagedAtomic<Int>(0)
   var clients     = [ ObjectIdentifier : RedisCommandHandler ]()
-  var monitors    = Atomic<Int>(value: 0)
+  var monitors    = ManagedAtomic<Int>(0)
   let pubSub      : PubSub
   
   public init(configuration: Configuration = Configuration()) {
@@ -206,7 +206,9 @@ open class RedisServer {
   func _unregisterClient(_ client: RedisCommandHandler) { // Q!
     let oid = ObjectIdentifier(client)
     clients.removeValue(forKey: oid)
-    if client.isMonitoring.load() { _ = monitors.add(-1) }
+    if client.isMonitoring.load(ordering: .relaxed) {
+      monitors.wrappingDecrement(ordering: .relaxed)
+    }
   }
   
   
@@ -223,8 +225,8 @@ open class RedisServer {
     
     Q.async {
       for ( _, client ) in self.clients {
-        guard client.isMonitoring.load()   else { continue }
-        guard let channel = client.channel else { continue }
+        guard client.isMonitoring.load(ordering: .relaxed) else { continue }
+        guard let channel = client.channel                 else { continue }
         channel.writeAndFlush(logPacket, promise: nil)
       }
     }
@@ -249,7 +251,7 @@ open class RedisServer {
           .addHandler(BackPressureHandler() /* Oh well :-) */,
                       name: "com.apple.nio.backpressure")
           .flatMap {
-            let cid     = clientID.add(1)
+            let cid     = clientID.wrappingIncrementThenLoad(ordering: .relaxed)
             let handler = RedisCommandHandler(id: cid, server: self)
             
             self.Q.async {

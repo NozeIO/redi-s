@@ -14,7 +14,7 @@
 
 import NIO
 import NIORedis
-import class NIOConcurrencyHelpers.Atomic
+import class Atomics.ManagedAtomic
 import struct Foundation.Data
 import struct Foundation.Date
 import struct Foundation.TimeInterval
@@ -50,7 +50,7 @@ final class RedisCommandHandler : RESPChannelHandler {
   var lastCommand   : String?
   var name          : String?
   var databaseIndex = 0
-  var isMonitoring  = Atomic<Bool>(value: false)
+  var isMonitoring  = ManagedAtomic<Bool>(false)
   
   var subscribedChannels : Set<Data>?
   var subscribedPatterns : Set<RedisPattern>?
@@ -123,7 +123,7 @@ final class RedisCommandHandler : RESPChannelHandler {
     do {
       let ( command, args ) = try parseCommandCall(value)
       
-      if server.monitors.load() > 0 {
+      if server.monitors.load(ordering: .relaxed) > 0 {
         let info = MonitorInfo(db: databaseIndex, addr: remoteAddress,
                                call: value)
         server.notifyMonitors(info: info)

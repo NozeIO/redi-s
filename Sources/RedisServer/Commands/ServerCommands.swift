@@ -91,10 +91,12 @@ extension Commands {
   
   static func MONITOR(_ ctx: CommandContext) throws {
     let client = ctx.handler
-    guard !client.isMonitoring.load() else { return ctx.write(RESPValue.ok) }
+    guard !client.isMonitoring.load(ordering: .relaxed) else {
+      return ctx.write(RESPValue.ok)
+    }
     
-    client.isMonitoring.store(true)
-    _ = client.server.monitors.add(1)
+    client.isMonitoring.store(true, ordering: .relaxed)
+    client.server.monitors.wrappingIncrement(ordering: .relaxed)
     ctx.write(RESPValue.ok)
   }
   
