@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -24,13 +24,27 @@ extension Commands {
     let commandTable = ctx.handler.server.commandTable
     
     if let value = value {
+      // TODO: Only supports one parameter here.
       guard let s = value.stringValue else {
         throw RedisError.unknownSubcommand // TBD? ProtocolError?
       }
       
       switch s.uppercased() {
-        case "COUNT": ctx.write(commandTable.count)
-        default: throw RedisError.unknownSubcommand
+        case "COUNT": 
+          ctx.write(commandTable.count)
+        case "LIST":
+          // TODO: [FILTERBY <MODULE name| ACLCAT cat| PATTERN ...>]
+          ctx.write(commandTable.map(\.name))
+        case "DOCS":
+          throw RedisError.unsupportedSubcommand
+        case "GETKEYS":
+          throw RedisError.unsupportedSubcommand
+        case "GETKEYSANDFLAGS":
+          throw RedisError.unsupportedSubcommand
+        case "INFO":
+          throw RedisError.unsupportedSubcommand
+        default:
+          throw RedisError.unknownSubcommand
       }
     }
     else {
@@ -91,10 +105,12 @@ extension Commands {
   
   static func MONITOR(_ ctx: CommandContext) throws {
     let client = ctx.handler
-    guard !client.isMonitoring.load() else { return ctx.write(RESPValue.ok) }
+    guard !client.isMonitoring.load(ordering: .relaxed) else {
+      return ctx.write(RESPValue.ok)
+    }
     
-    client.isMonitoring.store(true)
-    _ = client.server.monitors.add(1)
+    client.isMonitoring.store(true, ordering: .relaxed)
+    client.server.monitors.wrappingIncrement(ordering: .relaxed)
     ctx.write(RESPValue.ok)
   }
   
@@ -102,7 +118,7 @@ extension Commands {
     ctx.context.channel.close(mode: .input, promise: nil)
     
     ctx.context.writeAndFlush(NIOAny(RESPValue.ok))
-               .whenComplete {
+               .whenComplete { _ in
                  ctx.context.channel.close(promise: nil)
                }
   }
@@ -167,7 +183,6 @@ extension Commands {
       
       // do not block the server
       listQueue.async {
-        let nl : [ UInt8 ] = [ 10 ]
         var count  = clients.count
         guard count > 0 else { return ctx.write("") } // Never
         
@@ -177,8 +192,8 @@ extension Commands {
             assert(count > 0)
             count -= 1
             
-            result.write(string: info.redisClientLogLine)
-            result.write(bytes: nl)
+            result.writeString(info.redisClientLogLine)
+            result.writeInteger(10 as UInt8)
             
             if count == 0 {
               ctx.write(.bulkString(result))

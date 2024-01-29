@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -17,7 +17,7 @@ import struct Foundation.URL
 import struct Foundation.TimeInterval
 import class  Foundation.FileManager
 import class  Foundation.JSONDecoder
-import class  NIOConcurrencyHelpers.Atomic
+import class  Atomics.ManagedAtomic
 import enum   NIORedis.RESPValue
 import NIO
 
@@ -66,9 +66,9 @@ open class RedisServer {
   var databases   : Databases?
   
   let Q           = DispatchQueue(label: "de.zeezide.nio.redisd.clients")
-  let clientID    = Atomic<Int>(value: 0)
+  let clientID    = ManagedAtomic<Int>(0)
   var clients     = [ ObjectIdentifier : RedisCommandHandler ]()
-  var monitors    = Atomic<Int>(value: 0)
+  var monitors    = ManagedAtomic<Int>(0)
   let pubSub      : PubSub
   
   public init(configuration: Configuration = Configuration()) {
@@ -135,7 +135,7 @@ open class RedisServer {
       
       if let host = configuration.host {
         address = try SocketAddress
-          .newAddressResolving(host: host, port: configuration.port)
+          .makeAddressResolvingHost(host, port: configuration.port)
       }
       else {
         var addr = sockaddr_in()
@@ -206,7 +206,9 @@ open class RedisServer {
   func _unregisterClient(_ client: RedisCommandHandler) { // Q!
     let oid = ObjectIdentifier(client)
     clients.removeValue(forKey: oid)
-    if client.isMonitoring.load() { _ = monitors.add(-1) }
+    if client.isMonitoring.load(ordering: .relaxed) {
+      monitors.wrappingDecrement(ordering: .relaxed)
+    }
   }
   
   
@@ -217,16 +219,14 @@ open class RedisServer {
     
     let logPacket : RESPValue = {
       let logStr = info.redisClientLogLine
-      
-      var bb = ByteBufferAllocator().buffer(capacity: logStr.utf8.count + 1)
-      bb.write(string: logStr)
+      let bb     = ByteBuffer(string: logStr)
       return RESPValue.simpleString(bb)
     }()
     
     Q.async {
       for ( _, client ) in self.clients {
-        guard client.isMonitoring.load()   else { continue }
-        guard let channel = client.channel else { continue }
+        guard client.isMonitoring.load(ordering: .relaxed) else { continue }
+        guard let channel = client.channel                 else { continue }
         channel.writeAndFlush(logPacket, promise: nil)
       }
     }
@@ -248,19 +248,18 @@ open class RedisServer {
       // Set the handlers that are applied to the accepted Channels
       .childChannelInitializer { channel in
         channel.pipeline
-          .add(name: "com.apple.nio.backpressure",
-               handler: BackPressureHandler()) // Oh well :-)
-          .then {
-            let cid     = clientID.add(1)
+          .addHandler(BackPressureHandler() /* Oh well :-) */,
+                      name: "com.apple.nio.backpressure")
+          .flatMap {
+            let cid     = clientID.wrappingIncrementThenLoad(ordering: .relaxed)
             let handler = RedisCommandHandler(id: cid, server: self)
             
             self.Q.async {
               self._registerClient(handler)
             }
             
-            return channel.pipeline.add(name:
-                                          "de.zeezide.nio.redis.server.client",
-                                        handler: handler)
+            return channel.pipeline
+              .addHandler(handler, name:"de.zeezide.nio.redis.server.client")
           }
       }
       

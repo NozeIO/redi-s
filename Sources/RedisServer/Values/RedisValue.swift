@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -219,10 +219,7 @@ extension Collection where Element == RESPValue {
 extension ByteBuffer {
   
   static func makeFromIntAsString(_ value: Int) -> ByteBuffer {
-    let utf8   = String(value).utf8
-    var buffer = sharedAllocator.buffer(capacity: utf8.count)
-    buffer.write(bytes: utf8)
-    return buffer
+    return ByteBuffer(string: String(value))
   }
   var stringAsInteger: Int? {
     guard readableBytes > 0 else { return nil }

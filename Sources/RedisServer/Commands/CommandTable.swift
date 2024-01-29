@@ -23,7 +23,7 @@ extension RedisServer {
   static let defaultCommandTable : RedisCommandTable = [
     // command is funny in that arity is 0
     Command(name  : "COMMAND",
-            type  : .optionalValue(Commands.COMMAND), // FIXME: multivalue
+            type  : .optionalValue(Commands.COMMAND), // FIXME: multivalue!
             flags : [ .loading, .stale ]),
     
     Command(name  : "PING",

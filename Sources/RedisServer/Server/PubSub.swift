@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -138,7 +138,9 @@ class PubSub {
     
     guard var loopToSubscribers = registry[key]                  else { return }
     guard var subscribers = loopToSubscribers[loopID]            else { return }
-    guard let idx = subscribers.index(where: { $0 === handler }) else { return }
+    guard let idx = subscribers.firstIndex(where: { $0 === handler }) else {
+      return
+    }
     
     subscribers.remove(at: idx)
     if subscribers.isEmpty {
