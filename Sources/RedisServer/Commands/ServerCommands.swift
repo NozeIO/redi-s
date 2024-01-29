@@ -24,13 +24,27 @@ extension Commands {
     let commandTable = ctx.handler.server.commandTable
     
     if let value = value {
+      // TODO: Only supports one parameter here.
       guard let s = value.stringValue else {
         throw RedisError.unknownSubcommand // TBD? ProtocolError?
       }
       
       switch s.uppercased() {
-        case "COUNT": ctx.write(commandTable.count)
-        default: throw RedisError.unknownSubcommand
+        case "COUNT": 
+          ctx.write(commandTable.count)
+        case "LIST":
+          // TODO: [FILTERBY <MODULE name| ACLCAT cat| PATTERN ...>]
+          ctx.write(commandTable.map(\.name))
+        case "DOCS":
+          throw RedisError.unsupportedSubcommand
+        case "GETKEYS":
+          throw RedisError.unsupportedSubcommand
+        case "GETKEYSANDFLAGS":
+          throw RedisError.unsupportedSubcommand
+        case "INFO":
+          throw RedisError.unsupportedSubcommand
+        default:
+          throw RedisError.unknownSubcommand
       }
     }
     else {
