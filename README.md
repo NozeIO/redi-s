@@ -45,7 +45,25 @@ Contributions welcome!! A lot of the missing stuff is really easy to add!
 Performance differs, e.g. lists are implemented using arrays (hence RPUSH is
 okayish, LPUSH is very slow).
 But looking at just the simple GET/SET, it is surprisingly close to the
-highly optimized C implementation:
+highly optimized C implementation.
+
+### 2024-01-30 Swift 5.9.2
+
+Redi/S (1 NIO thread on M1 Mac Mini):
+```
+helge@M1ni ~ $ redis-benchmark -p 1337 -t SET,GET,RPUSH,INCR -n 500000 -q
+WARNING: Could not fetch server CONFIG
+SET: 163345.31 requests per second, p50=0.255 msec                    
+GET: 167336.02 requests per second, p50=0.239 msec                    
+INCR: 158780.56 requests per second, p50=0.239 msec                    
+RPUSH: 157480.31 requests per second, p50=0.271 msec                    
+```
+
+Note that more threads end up being worse. Not entirely sure why.
+
+### Those Are Older Numbers from 2018
+
+- using Swift 4.2 on Intel, IIRC
 
 Redi/S (2 NIO threads on MacPro 3,7 GHz Quad-Core Intel Xeon E5):
 ```
