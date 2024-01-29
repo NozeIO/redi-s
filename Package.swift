@@ -10,7 +10,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/SwiftNIOExtras/swift-nio-redis.git", 
-                 from: "0.10.3"),
+                 from: "0.11.0"),
         .package(url: "https://github.com/apple/swift-atomics", from: "1.0.0")
     ],
     targets: [
