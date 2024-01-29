@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -118,12 +118,13 @@ public struct RedisCommandContext {
     let handler = self.handler
     
     if eventLoop.inEventLoop {
-      handler.write(ctx: context, value: value.toRESPValue(), promise: nil)
+      handler.write(context: context, value: value.toRESPValue(), promise: nil)
       if flush { context.channel.flush() }
     }
     else {
       eventLoop.execute {
-        handler.write(ctx: context, value: value.toRESPValue(), promise: nil)
+        handler.write(context: context, value: value.toRESPValue(),
+                      promise: nil)
         if flush { context.channel.flush() }
       }
     }
@@ -134,12 +135,12 @@ public struct RedisCommandContext {
     let handler = self.handler
     
     if eventLoop.inEventLoop {
-      handler.write(ctx: context, value: value, promise: nil)
+      handler.write(context: context, value: value, promise: nil)
       if flush { context.channel.flush() }
     }
     else {
       eventLoop.execute {
-        handler.write(ctx: context, value: value, promise: nil)
+        handler.write(context: context, value: value, promise: nil)
         if flush { context.channel.flush() }
       }
     }

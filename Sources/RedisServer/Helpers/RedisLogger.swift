@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -22,22 +22,26 @@ public protocol RedisLogger {
 
 public extension RedisLogger {
   
-  public func error(_ msg: @autoclosure () -> String, _ values: Any?...) {
+  @inlinable
+  func error(_ msg: @autoclosure () -> String, _ values: Any?...) {
     primaryLog(.Error, msg, values)
   }
-  public func warn (_ msg: @autoclosure () -> String, _ values: Any?...) {
+  @inlinable
+  func warn (_ msg: @autoclosure () -> String, _ values: Any?...) {
     primaryLog(.Warn, msg, values)
   }
-  public func log  (_ msg: @autoclosure () -> String, _ values: Any?...) {
+  @inlinable
+  func log  (_ msg: @autoclosure () -> String, _ values: Any?...) {
     primaryLog(.Log, msg, values)
   }
-  public func info (_ msg: @autoclosure () -> String, _ values: Any?...) {
+  @inlinable
+  func info (_ msg: @autoclosure () -> String, _ values: Any?...) {
     primaryLog(.Info, msg, values)
   }
-  public func trace(_ msg: @autoclosure () -> String, _ values: Any?...) {
+  @inlinable
+  func trace(_ msg: @autoclosure () -> String, _ values: Any?...) {
     primaryLog(.Trace, msg, values)
   }
-  
 }
 
 public enum RedisLogLevel : Int8 {
@@ -86,10 +90,13 @@ fileprivate let redisLogDateFmt : DateFormatter = {
   return formatter
 }()
 
+private let pid = getpid()
+
 public struct RedisPrintLogger : RedisLogger {
   
   public let logLevel : LogLevel
   
+  @inlinable
   public init(logLevel: LogLevel = .Log) {
     self.logLevel = logLevel
   }
@@ -100,7 +107,6 @@ public struct RedisPrintLogger : RedisLogger {
   {
     guard logLevel.rawValue <= self.logLevel.rawValue else { return }
     
-    let pid = getpid()
     let now = Date()
     
     let prefix =

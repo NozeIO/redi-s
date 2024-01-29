@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -21,6 +21,7 @@ enum RedisError : Swift.Error, RESPEncodable {
   case indexOutOfRange
   case notAnInteger
   case unknownSubcommand
+  case unsupportedSubcommand
   case syntaxError
   case dbIndexOutOfRange
   case invalidDBIndex
@@ -58,7 +59,9 @@ enum RedisError : Swift.Error, RESPEncodable {
         return "value is not an integer or out of range"
       case .unknownSubcommand:
         return "Unknown subcommand or wrong number of arguments."
-      
+      case .unsupportedSubcommand:
+        return "The subcommand is known, but unsupported."
+
       case .wrongNumberOfArguments(let command):
         if let command = command {
           return "wrong number of arguments for: \(command.uppercased())"

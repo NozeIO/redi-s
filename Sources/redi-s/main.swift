@@ -2,7 +2,7 @@
 //
 // This source file is part of the swift-nio-redis open source project
 //
-// Copyright (c) 2018 ZeeZide GmbH. and the swift-nio-redis project authors
+// Copyright (c) 2018-2024 ZeeZide GmbH. and the swift-nio-redis project authors
 // Licensed under Apache License v2.0
 //
 // See LICENSE.txt for license information
@@ -34,7 +34,9 @@ if args.contains("--help") || args.contains("-h") {
 }
 
 let cmdLinePort : Int? = {
-  guard let idx = args.index(where: { [ "-p", "--port" ].contains($0) }) else {
+  guard let idx =
+          args.firstIndex(where: { [ "-p", "--port" ].contains($0) }) else
+  {
     return nil
   }
   guard (idx + 1) < args.endIndex, let port = UInt16(args[idx + 1]) else {
